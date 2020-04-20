@@ -7,7 +7,7 @@
     "build": "ng build",
     "build:prod": "ng build --prod",
     "build:prod:ngh": "ng build --prod --base-href \"https:\/\/solium7.github.io\/psb-timepicker\/\"",
-    "deploy": "ngh --dir dist/docs",
+    "deploy": "ngh --dir dist/psb-timepicker",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
