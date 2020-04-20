@@ -1,0 +1,70 @@
+<div class="time-picker-container">
+  <mat-form-field class="time-input" [ngClass]="{ 'mat-form-field-invalid': errors }">
+    <input matInput
+           [value]="inputValue"
+           [disabled]="disabled"
+           [textMask]="{mask: maskFn}"
+           [placeholder]="placeholder"
+           (blur)="onBlur($event)"
+           (focus)="onFocus()"
+
+    >
+  </mat-form-field>
+  <mat-error class="select-error-hint" *ngIf="errors?.required">Обязательное поле</mat-error>
+
+  <div class="time-picker" #timePicker
+       [ngClass]="{visible: showTimePicker}">
+    <div class="pickers">
+
+      <div class="time-picker-content">
+        <div (click)="prevHour()" class="control">
+          <mat-icon>keyboard_arrow_up</mat-icon>
+        </div>
+        <div id="hours-carousel-container" class="carousel-container">
+          <div>
+            <ul id="hours-carousel" class="carousel animate" (mousewheel)="onHourWheel($event)">
+              <li *ngFor="let hour of hours"
+                  class="hour-slide animate"
+                  (click)="selectHour(hour)"
+              >
+                {{hour}}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div (click)="nextHour()" class="control">
+          <mat-icon>keyboard_arrow_down</mat-icon>
+        </div>
+      </div>
+
+      <div class="divider"> :</div>
+
+      <div class="time-picker-content">
+        <div (click)="prevMinute()" class="control">
+          <mat-icon>keyboard_arrow_up</mat-icon>
+        </div>
+        <div id="minutes-carousel-container" class="carousel-container">
+          <div>
+            <ul id="minutes-carousel" class="carousel animate" (mousewheel)="onMinuteWheel($event)">
+              <li *ngFor="let minute of minutes"
+                  class="minute-slide animate"
+                  (click)="selectMinute(minute)"
+              >
+                {{minute}}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div (click)="nextMinute()" class="control">
+          <mat-icon>keyboard_arrow_down</mat-icon>
+        </div>
+      </div>
+      <div class="current-value-border"></div>
+    </div>
+    <div class="picker-buttons">
+      <button mat-button [style.marginRight]="'10px'">Отмена</button>
+      <button mat-button color="primary">ОК</button>
+    </div>
+  </div>
+
+</div>
