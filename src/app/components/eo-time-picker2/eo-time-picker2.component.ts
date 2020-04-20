@@ -3,12 +3,11 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  forwardRef,
+  forwardRef, HostListener,
   Input,
   OnInit,
   Output,
   ViewChild,
-  ViewEncapsulation
 } from '@angular/core';
 import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
 
@@ -25,91 +24,73 @@ import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
   templateUrl: './eo-time-picker2.component.html',
   styleUrls: ['./eo-time-picker2.component.css'],
 })
-export class EoTimePicker2Component implements ControlValueAccessor, OnInit, AfterViewInit {
-
-  @ViewChild('timePicker', {static: false}) timePicker;
+export class EoTimePicker2Component implements ControlValueAccessor, OnInit {
 
   @Input() inputValue = '';
   @Input() placeholder = 'Время';
-  @Input() minHour = 0;
-  @Input() maxHour = 23;
   @Input() errors;
-  @Output() timeChange: EventEmitter<string> = new EventEmitter<string>();
+  @Output() valueChanges: EventEmitter<string> = new EventEmitter<string>();
 
   disabled = false;
 
-  hourIndex = 0;
-  minuteIndex = 0;
-  amountHours = 0;
-  amountMinutes = 0;
-  currTranslHours = [];
-  currTranslMinutes = [];
-  private translationComplete = true;
-  moveOffset = 0;
-  showTimePicker = false;
-  hours = [];
-  minutes = [];
-  selectedHour = '00';
-  selectedMinute = '00';
-  timeValue = '00:00';
+  timePickerIsVisible = false;
+  visibleHours = [];
+  visibleMinutes = [];
+  selectedHour: number;
+  selectedMinute: number;
+
+  @HostListener('document:click', ['$event'])
+  clickout(event) {
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.hideTimePicker();
+    }
+  }
 
   constructor(private elementRef: ElementRef) {
   }
 
   ngOnInit(): void {
-    for (let i = 0; i < 60; i++) {
-      // if (i % 5 === 0) {
-      if (i < 10) {
-        this.minutes.push('0' + i);
-      } else {
-        this.minutes.push('' + i);
+    this.resetPickers();
+  }
+
+  resetPickers() {
+    this.selectedHour = this.inputValue ? +this.inputValue.split(':')[0] : 12;
+    this.selectedMinute = this.inputValue ? +this.inputValue.split(':')[1] : 0;
+    this.setVisibleHours(this.selectedHour);
+    this.setVisibleMinutes(this.selectedMinute);
+  }
+
+  setVisibleHours(selectedValue: number) {
+    for (let i = 0; i < 5; i++) {
+      let value = selectedValue - 2 + i;
+      if (value < 0) {
+        value = value + 24;
       }
-      // }
-    }
-    for (let i = this.minHour; i <= this.maxHour; i++) {
-      if (i < 10) {
-        this.hours.push('0' + i);
-      } else {
-        this.hours.push('' + i);
+      if (value > 23) {
+        value = value - 24;
       }
+      this.visibleHours[i] = value;
     }
   }
 
-  ngAfterViewInit(): void {
-    this.moveOffset = parseInt(window.getComputedStyle(
-      this.elementRef.nativeElement.querySelector('.hour-slide')).height, 10
-    );
-
-    const hoursCarousel = this.elementRef.nativeElement.querySelector('#hours-carousel');
-    const hourSlides = this.elementRef.nativeElement.querySelectorAll('.hour-slide');
-    this.amountHours = hourSlides.length;
-
-    hoursCarousel.style.width = (this.amountHours * this.moveOffset) + 'px';
-    for (let i = 0; i < this.amountHours; i++) {
-      this.currTranslHours[i] = -this.moveOffset;
-      hourSlides[i].addEventListener('transitionend', this.transitionCompleted.bind(this), true);
-      hourSlides[i].addEventListener('webkitTransitionEnd', this.transitionCompleted.bind(this), true);
-      hourSlides[i].addEventListener('oTransitionEnd', this.transitionCompleted.bind(this), true);
-      hourSlides[i].addEventListener('MSTransitionEnd', this.transitionCompleted.bind(this), true);
+  setVisibleMinutes(selectedValue: number) {
+    for (let i = 0; i < 5; i++) {
+      let value = selectedValue - 2 + i;
+      if (value < 0) {
+        value = value + 60;
+      }
+      if (value > 59) {
+        value = value - 60;
+      }
+      this.visibleMinutes[i] = value;
     }
-    hoursCarousel.insertBefore(hoursCarousel.children[hourSlides.length - 1], hoursCarousel.children[0]);
-
-    const minutesCarousel = this.elementRef.nativeElement.querySelector('#minutes-carousel');
-    const minuteSlides = this.elementRef.nativeElement.querySelectorAll('.minute-slide');
-    this.amountMinutes = minuteSlides.length;
-
-    minutesCarousel.style.width = (this.amountMinutes * this.moveOffset) + 'px';
-    for (let i = 0; i < this.amountMinutes; i++) {
-      this.currTranslMinutes[i] = -this.moveOffset;
-      minuteSlides[i].addEventListener('transitionend', this.transitionCompleted.bind(this), true);
-      minuteSlides[i].addEventListener('webkitTransitionEnd', this.transitionCompleted.bind(this), true);
-      minuteSlides[i].addEventListener('oTransitionEnd', this.transitionCompleted.bind(this), true);
-      minuteSlides[i].addEventListener('MSTransitionEnd', this.transitionCompleted.bind(this), true);
-    }
-    minutesCarousel.insertBefore(minutesCarousel.children[minuteSlides.length - 1], minutesCarousel.children[0]);
   }
+
+  timeChange = (_: any) => {
+  };
 
   registerOnChange(fn: any): void {
+    this.timeChange = fn;
   }
 
   registerOnTouched(fn: any): void {
@@ -120,115 +101,13 @@ export class EoTimePicker2Component implements ControlValueAccessor, OnInit, Aft
 
   writeValue(time: string): void {
     this.inputValue = time;
+    this.resetPickers();
   }
 
   onTimeSet(time) {
     this.inputValue = time;
-    this.timeChange.emit(this.inputValue);
-  }
-
-  transitionCompleted() {
-    this.translationComplete = true;
-  }
-
-  prevHour() {
-    if (this.translationComplete) {
-      this.translationComplete = false;
-      this.hourIndex--;
-      if (this.hourIndex === -1) {
-        this.hourIndex = this.amountHours - 1;
-      }
-      const hourSlides = this.elementRef.nativeElement.querySelectorAll('.hour-slide');
-      const outerIndex = (this.hourIndex) % this.amountHours;
-      for (let i = 0; i < this.amountHours; i++) {
-        const slide = hourSlides[i];
-        slide.style.opacity = '1';
-        slide.style.transform = 'translateY(' + (this.currTranslHours[i] + this.moveOffset) + 'px)';
-        this.currTranslHours[i] = this.currTranslHours[i] + this.moveOffset;
-      }
-      const outerSlide = hourSlides[outerIndex];
-      outerSlide.style.transform = 'translateY(' + (this.currTranslHours[outerIndex] - (this.moveOffset * this.amountHours)) + 'px)';
-      outerSlide.style.opacity = '0';
-      this.currTranslHours[outerIndex] = this.currTranslHours[outerIndex] - this.moveOffset * (this.amountHours);
-    }
-  }
-
-  nextHour() {
-    if (this.translationComplete) {
-      this.translationComplete = false;
-      const outerIndex = (this.hourIndex) % this.amountHours;
-      this.hourIndex++;
-      const slides = this.elementRef.nativeElement.querySelectorAll('.hour-slide');
-      for (let i = 0; i < this.amountHours; i++) {
-        const slide = slides[i];
-        slide.style.opacity = '1';
-        slide.style.transform = 'translateY(' + (this.currTranslHours[i] - this.moveOffset) + 'px)';
-        this.currTranslHours[i] = this.currTranslHours[i] - this.moveOffset;
-      }
-
-      const outerSlide = slides[outerIndex];
-      outerSlide.style.transform = 'translateY(' + (this.currTranslHours[outerIndex] + (this.moveOffset * this.amountHours)) + 'px)';
-      outerSlide.style.opacity = '0';
-      this.currTranslHours[outerIndex] = this.currTranslHours[outerIndex] + this.moveOffset * (this.amountHours);
-    }
-  }
-
-  prevMinute() {
-    if (this.translationComplete) {
-      this.translationComplete = false;
-      this.minuteIndex--;
-      if (this.minuteIndex === -1) {
-        this.minuteIndex = this.amountMinutes - 1;
-      }
-      const minuteSlides = this.elementRef.nativeElement.querySelectorAll('.minute-slide');
-      const outerIndex = (this.minuteIndex) % this.amountMinutes;
-      for (let i = 0; i < this.amountMinutes; i++) {
-        const slide = minuteSlides[i];
-        slide.style.opacity = '1';
-        slide.style.transform = 'translateY(' + (this.currTranslMinutes[i] + this.moveOffset) + 'px)';
-        this.currTranslMinutes[i] = this.currTranslMinutes[i] + this.moveOffset;
-      }
-
-      const outerSlide = minuteSlides[outerIndex];
-      outerSlide.style.transform = 'translateY(' + (this.currTranslMinutes[outerIndex] - (this.moveOffset * this.amountMinutes)) + 'px)';
-      outerSlide.style.opacity = '0';
-      this.currTranslMinutes[outerIndex] = this.currTranslMinutes[outerIndex] - this.moveOffset * (this.amountMinutes);
-    }
-  }
-
-  nextMinute() {
-    if (this.translationComplete) {
-      this.translationComplete = false;
-      const outerIndex = (this.minuteIndex) % this.amountMinutes;
-      this.minuteIndex++;
-      const minuteSlides = this.elementRef.nativeElement.querySelectorAll('.minute-slide');
-      for (let i = 0; i < this.amountMinutes; i++) {
-        const slide = minuteSlides[i];
-        slide.style.opacity = '1';
-        slide.style.transform = 'translateY(' + (this.currTranslMinutes[i] - this.moveOffset) + 'px)';
-        this.currTranslMinutes[i] = this.currTranslMinutes[i] - this.moveOffset;
-      }
-
-      const outerSlide = minuteSlides[outerIndex];
-      outerSlide.style.transform = 'translateY(' + (this.currTranslMinutes[outerIndex] + (this.moveOffset * this.amountMinutes)) + 'px)';
-      outerSlide.style.opacity = '0';
-      this.currTranslMinutes[outerIndex] = this.currTranslMinutes[outerIndex] + this.moveOffset * (this.amountMinutes);
-    }
-  }
-
-  onFocus() {
-    this.timePicker.nativeElement.style.display = 'block';
-    this.showTimePicker = true;
-  }
-
-
-  onBlur(event: FocusEvent) {
-    // this.timePicker.nativeElement.style.display = 'none';
-    // this.showTimePicker = false;
-
-    // this.inputValue = event.target.value;
-    // this.propagateChange(this.inputValue);
-    // this.valueChanges.emit(this.inputValue);
+    this.timeChange(this.inputValue);
+    this.valueChanges.emit(this.inputValue);
   }
 
   maskFn(rawValue) {
@@ -245,38 +124,67 @@ export class EoTimePicker2Component implements ControlValueAccessor, OnInit, Aft
     return mask;
   }
 
-  selectMinute(minute: string) {
-    this.selectedMinute = minute;
+  selectHour(hour: number) {
+    let newValue = hour;
+    if (newValue > 23) newValue = newValue - 24;
+    if (newValue < 0) newValue = newValue + 24;
+    this.selectedHour = newValue;
+    this.setVisibleHours(this.selectedHour);
   }
 
-  selectHour(hour: string) {
-    this.selectedHour = hour;
+  selectMinute(minute: number) {
+    let newValue = minute;
+    if (newValue > 59) newValue = newValue - 60;
+    if (newValue < 0) newValue = newValue + 60;
+    this.selectedMinute = newValue;
+    this.setVisibleMinutes(this.selectedMinute);
+
   }
 
   okButtonClick() {
-
-  }
-
-  cancelButtonClick() {
+    const hours = this.selectedHour > 9 ? this.selectedHour : '0' + this.selectedHour;
+    const minutes = this.selectedMinute > 9 ? this.selectedMinute : '0' + this.selectedMinute;
+    this.onTimeSet(hours + ':' + minutes);
+    this.hideTimePicker();
   }
 
   onHourWheel($event: any) {
     if ($event.deltaY > 0) {
-      this.nextHour();
+      this.selectHour(this.selectedHour + 1);
     }
     if ($event.deltaY < 0) {
-      this.prevHour();
+      this.selectHour(this.selectedHour - 1);
     }
   }
 
   onMinuteWheel($event: any) {
     if ($event.deltaY > 0) {
-      this.nextMinute();
+      this.selectMinute(this.selectedMinute + 1);
     }
     if ($event.deltaY < 0) {
-      this.prevMinute();
+      this.selectMinute(this.selectedMinute - 1);
     }
   }
 
+  showTimePicker() {
+    this.timePickerIsVisible = true;
+  }
 
+  hideTimePicker() {
+    this.timePickerIsVisible = false;
+  }
+
+  onBlur(event) {
+    this.inputValue = event.target.value;
+    this.timeChange(this.inputValue);
+    this.valueChanges.emit(this.inputValue);
+  }
+
+  shiftHours(value: number) {
+    this.selectHour(this.selectedHour + value);
+  }
+
+  shiftMinutes(value: number) {
+    this.selectMinute(this.selectedMinute + value);
+  }
 }

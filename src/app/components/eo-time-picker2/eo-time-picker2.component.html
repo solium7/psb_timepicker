@@ -6,33 +6,30 @@
            [textMask]="{mask: maskFn}"
            [placeholder]="placeholder"
            (blur)="onBlur($event)"
-           (focus)="onFocus()"
-
+           (focus)="hideTimePicker()"
     >
   </mat-form-field>
+  <button mat-button matSuffix mat-icon-button type="button" (click)="showTimePicker()" [disabled]="disabled">
+    <mat-icon>watch_later</mat-icon>
+  </button>
   <mat-error class="select-error-hint" *ngIf="errors?.required">Обязательное поле</mat-error>
-
-  <div class="time-picker" #timePicker
-       [ngClass]="{visible: showTimePicker}">
+  <div class="time-picker" [ngClass]="{visible: timePickerIsVisible}">
+    <div class="current-value-border"></div>
     <div class="pickers">
 
       <div class="time-picker-content">
-        <div (click)="prevHour()" class="control">
+        <div (click)="shiftHours(-1)" class="control">
           <mat-icon>keyboard_arrow_up</mat-icon>
         </div>
-        <div id="hours-carousel-container" class="carousel-container">
-          <div>
-            <ul id="hours-carousel" class="carousel animate" (mousewheel)="onHourWheel($event)">
-              <li *ngFor="let hour of hours"
-                  class="hour-slide animate"
-                  (click)="selectHour(hour)"
-              >
-                {{hour}}
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div (click)="nextHour()" class="control">
+        <ul class="carousel" (mousewheel)="onHourWheel($event)">
+          <li *ngFor="let hour of visibleHours"
+              class="slide"
+              (click)="selectHour(hour)"
+          >
+            {{hour < 10 ? '0' + hour : hour}}
+          </li>
+        </ul>
+        <div (click)="shiftHours(1)" class="control">
           <mat-icon>keyboard_arrow_down</mat-icon>
         </div>
       </div>
@@ -40,30 +37,31 @@
       <div class="divider"> :</div>
 
       <div class="time-picker-content">
-        <div (click)="prevMinute()" class="control">
+        <div (click)="shiftMinutes(-1)" class="control">
           <mat-icon>keyboard_arrow_up</mat-icon>
         </div>
-        <div id="minutes-carousel-container" class="carousel-container">
-          <div>
-            <ul id="minutes-carousel" class="carousel animate" (mousewheel)="onMinuteWheel($event)">
-              <li *ngFor="let minute of minutes"
-                  class="minute-slide animate"
-                  (click)="selectMinute(minute)"
-              >
-                {{minute}}
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div (click)="nextMinute()" class="control">
+        <ul class="carousel" (mousewheel)="onMinuteWheel($event)">
+          <li *ngFor="let minute of visibleMinutes"
+              class="slide"
+              (click)="selectMinute(minute)"
+          >
+            {{minute < 10 ? '0' + minute : minute}}
+          </li>
+        </ul>
+        <div (click)="shiftMinutes(1)" class="control">
           <mat-icon>keyboard_arrow_down</mat-icon>
         </div>
       </div>
-      <div class="current-value-border"></div>
     </div>
     <div class="picker-buttons">
-      <button mat-button [style.marginRight]="'10px'">Отмена</button>
-      <button mat-button color="primary">ОК</button>
+      <button mat-button [style.marginRight]="'10px'"
+      (click)="hideTimePicker()">
+        Отмена
+      </button>
+      <button mat-button color="primary"
+      (click)="okButtonClick()">
+        ОК
+      </button>
     </div>
   </div>
 
